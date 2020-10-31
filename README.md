@@ -42,3 +42,10 @@ python test_pedestrian.py
 PASCAL data loader <br>
 refine the .sh file in download PASCAL
 
+## To train on PASCAL VOC
+Download PASCAL dataset using .sh  
+git checkout PASCAL  
+cd ./mask-rcnn-Pytorch/utils_pascal/create_data_lists.py  
+open create_data_lists.py and modify correct path  
+cd ./mask-rcnn-Pytorch  
+python3 train_pascal.py  

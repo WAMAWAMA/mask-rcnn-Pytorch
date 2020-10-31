@@ -6,3 +6,8 @@ para.py
 model_*.pth
 env
 Pedestrian
+label_map.json
+TEST_images*
+TEST_objects*
+TRAIN_images*
+TRAIN_objects*
