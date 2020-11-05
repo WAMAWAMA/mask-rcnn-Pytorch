@@ -2,6 +2,7 @@ import time
 import torch.backends.cudnn as cudnn
 import torch.optim
 import torch.utils.data
+import torchvision
 from model.modified_mask_rcnn import get_model
 from utils_pascal.PascalDataset import PascalVOCDataset
 from utils_pascal.utils_pascal import *
@@ -21,14 +22,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 checkpoint = None  # path to model checkpoint, None if none
 batch_size = 4  # batch size
 iterations = 120000  # number of iterations to train
-workers = 4  # number of workers for loading data in the DataLoader
+workers = 0  # number of workers for loading data in the DataLoader
 print_freq = 200  # print training status every __ batches
-lr = 1e-3  # learning rate
+lr = 1e-4  # learning rate
 decay_lr_at = [80000, 100000]  # decay learning rate after these many iterations
 decay_lr_to = 0.1  # decay learning rate to this fraction of the existing learning rate
 momentum = 0.9  # momentum
 weight_decay = 5e-4  # weight decay
-grad_clip = None  # clip if gradients are exploding, which may happen at larger batch sizes (sometimes at 32) - you will recognize it by a sorting error in the MuliBox loss calculation
+# clip if gradients are exploding, which may happen at larger batch sizes (sometimes at 32) - you will recognize it by a sorting error in the MuliBox loss calculation
+grad_clip = None
 
 cudnn.benchmark = True
 
@@ -42,7 +44,8 @@ def main():
     # Initialize model or load checkpoint
     if checkpoint is None:
         start_epoch = 0
-        model = get_model(num_classes=20)
+        model = get_model(num_classes=21)
+        # model = torchvision.models.detection.FasterRCNN(pretrain=True, num_classes=20)
         optimizer = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
 
     else:
@@ -117,14 +120,16 @@ def train(train_loader, model, criterion, optimizer, epoch):
         images = images.to(device)  # (batch_size (N), 3, 300, 300)
         boxes = [b.to(device) for b in boxes]
         labels = [l.to(device) for l in labels]
-        targets = {}
-        targets["boxes"] = boxes
-        targets["labels"] = labels
+        # targets = [{k: v.to(device) for k, v in t.items()} for t in targets]
+        masks = torch.zeros_like(images)
+        targets = [{'boxes': b, 'labels': l, 'masks': m} for b, l, m in zip(boxes, labels, masks)]
+        # targets["boxes"] = boxes
+        # targets["labels"] = labels
         # pdb.set_trace()
         # Forward prop.
         # predicted_locs, predicted_scores = model(images)  # (N, 8732, 4), (N, 8732, n_classes)
         loss_dict = model(images, targets)
-        print(loss_dict)
+        # print(loss_dict)
 
         # Loss
         # loss = criterion(predicted_locs, predicted_scores, boxes, labels)  # scalar
