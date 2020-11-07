@@ -20,7 +20,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Learning parameters
 checkpoint = None  # path to model checkpoint, None if none
-batch_size = 4  # batch size
+batch_size = 1  # batch size
 iterations = 120000  # number of iterations to train
 workers = 0  # number of workers for loading data in the DataLoader
 print_freq = 200  # print training status every __ batches
@@ -115,7 +115,8 @@ def train(train_loader, model, criterion, optimizer, epoch):
     # Batches
     for i, (images, boxes, labels, _) in enumerate(train_loader):
         data_time.update(time.time() - start)
-
+        if (i == 100): 
+            break
         # Move to default device
         images = images.to(device)  # (batch_size (N), 3, 300, 300)
         boxes = [b.to(device) for b in boxes]
