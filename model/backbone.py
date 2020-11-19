@@ -33,10 +33,10 @@ class TimmToVisionFPN(nn.Module):
 
 
 class TimmToVision(nn.Module):
-    def __init__(self, backbone):
+    def __init__(self, backbone, out_channels):
         super(TimmToVision, self).__init__()
         self.backbone = backbone
-        self.out_channels = 1024
+        self.out_channels = out_channels
 
     def forward(self, x):
         x = self.backbone(x)
@@ -48,22 +48,19 @@ def resnet50_fpn():
     return backbone
 
 
+def calculate_param(model):
+    pytorch_total_params = sum(p.numel() for p in model.parameters())
+    return pytorch_total_params
+
+
 def test():
 
     input = torch.Tensor(2, 3, 832, 928)
 
-    #n = timm.create_model('cspresnet50', features_only=True, pretrained=True)
-    #n = timm.create_model('resnet50', features_only=True, pretrained=True)
+    m = timm.create_model('cspresnet50', features_only=True, pretrained=True)
+    m = TimmToVisionFPN(m)
 
-    # print(m.state_dict().keys())
-
-    n = timm.create_model('ECAcspresnet50', features_only=True, pretrained=True, pretrained_strict=False)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    m = n.to(device)
-    #summary(m, input_size=(3, 64, 64))
-
-    print(n.state_dict().keys())
-    # m = TimmToVisionFPN(m)
+    print(calculate_param(m))
     # o = m(input)
 
     # for (k, v) in o.items():
