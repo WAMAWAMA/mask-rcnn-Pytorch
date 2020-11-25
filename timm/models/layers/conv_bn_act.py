@@ -2,6 +2,7 @@
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
+import torch
 from torch import nn as nn
 
 from .create_conv2d import create_conv2d
@@ -40,11 +41,11 @@ class ConvBnAct(nn.Module):
         return x
 
 class AAConvBnAct(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, dk, dv, Nh, shape=0, relative, stride=1,
-                 norm_layer=nn.BatchNorm2d, norm_kwargs=None, act_layer=nn.ReLU, apply_act=True,
-                 drop_block=None, aa_layer=None):
+    def __init__(self, in_channels, out_channels, kernel_size, dk, dv, Nh, shape=128, relative=False, stride=1):
         super(AAConvBnAct, self).__init__()
-        use_aa = aa_layer is not None
+        # use_aa = aa_layer is not None
+        print("dv = ",dv)
+        print("Nh = ",Nh)
 
         # self.conv = create_conv2d(
         #     in_channels, out_channels, kernel_size, stride=1 if use_aa else stride,
@@ -55,8 +56,8 @@ class AAConvBnAct(nn.Module):
         #     padding=padding, dilation=dilation, groups=groups, bias=False)
 
         # NOTE for backwards compatibility with models that use separate norm and act layer definitions
-        norm_act_layer, norm_act_args = convert_norm_act_type(norm_layer, act_layer, norm_kwargs)
-        self.bn = norm_act_layer(out_channels, apply_act=apply_act, drop_block=drop_block, **norm_act_args)
+        # norm_act_layer, norm_act_args = convert_norm_act_type(norm_layer, act_layer, norm_kwargs)
+        # self.bn = norm_act_layer(out_channels, apply_act=apply_act, drop_block=drop_block, **norm_act_args)
         # self.aa = aa_layer(channels=out_channels) if stride == 2 and use_aa else None
         
         ## attention augmentation
@@ -85,13 +86,13 @@ class AAConvBnAct(nn.Module):
         if self.relative:
             self.key_rel_w = nn.Parameter(torch.randn((2 * self.shape - 1, dk // Nh), requires_grad=True))
             self.key_rel_h = nn.Parameter(torch.randn((2 * self.shape - 1, dk // Nh), requires_grad=True))
-    @property
-    def in_channels(self):
-        return self.conv.in_channels
+    # @property
+    # def in_channels(self):
+    #     return self.conv.in_channels
 
-    @property
-    def out_channels(self):
-        return self.conv.out_channels
+    # @property
+    # def out_channels(self):
+    #     return self.conv.out_channels
 
     def forward(self, x):
         # Input x

@@ -162,23 +162,18 @@ class AABottleneck(nn.Module):
                  attn_layer='AA', aa_layer=None, drop_block=None, drop_path=None):
         super(AABottleneck, self).__init__()
         # mid_chs = int(round(out_chs * bottle_ratio))
-        ckwargs = dict(act_layer=act_layer, norm_layer=norm_layer, aa_layer=aa_layer, drop_block=drop_block)
+        # ckwargs = dict(act_layer=act_layer, norm_layer=norm_layer, aa_layer=aa_layer, drop_block=drop_block)
 
         stride=1
-        v = 0.2
+        v = 0.25
         k = 2
         Nh = 4
         dropout_rate = 0.2
-        shape = 32
-        # self.conv1 = ConvBnAct(in_chs, mid_chs, kernel_size=1, **ckwargs)
-        # self.conv2 = ConvBnAct(mid_chs, mid_chs, kernel_size=3, dilation=dilation, groups=groups, **ckwargs)
-        # self.conv3 = ConvBnAct(mid_chs, out_chs, kernel_size=1, apply_act=False, **ckwargs)
-        # self.attn = create_attn(attn_layer, channels=out_chs)
-        # self.act3 = act_layer(inplace=True)
+        shape = 128
 
-        # def __init__(self, in_channels, out_channels, kernel_size, dk, dv, Nh, shape=0, relative, stride=1,
-        #         norm_layer=nn.BatchNorm2d, norm_kwargs=None, act_layer=nn.ReLU, apply_act=True,
-        #         drop_block=None, aa_layer=None):
+        print("out_chs = ", out_chs)
+        print("dv=",int(v * out_chs))
+
         if stride == 2:
             original_shape = shape * 2
         else:
@@ -189,6 +184,7 @@ class AABottleneck(nn.Module):
         self.dropout = nn.Dropout(p=dropout_rate)
         self.bn2 = nn.BatchNorm2d(out_chs)
         self.conv2 = AAConvBnAct(out_chs, out_chs, kernel_size=3, dk=k * out_chs, dv=int(v * out_chs), Nh=Nh, stride=stride, relative=True, shape=shape)
+        # self.conv3 = ConvBnAct(out_chs, out_chs , kernel_size=1, apply_act=False)
 
         self.shortcut = nn.Sequential()
         if stride != 1 or in_chs != out_chs:
@@ -198,7 +194,7 @@ class AABottleneck(nn.Module):
 
 
     def zero_init_last_bn(self):
-        nn.init.zeros_(self.conv3.bn.weight)
+        nn.init.zeros_(self.conv2.shape)
 
     def forward(self, x):
         out = self.dropout(self.conv1(F.relu(self.bn1(x))))
@@ -247,40 +243,15 @@ class AACrossStage(nn.Module):
         self.conv_transition_b = ConvBnAct(prev_chs, exp_chs // 2, kernel_size=1, **conv_kwargs)
         self.conv_transition = ConvBnAct(exp_chs, out_chs, kernel_size=1, **conv_kwargs)
 
-        # # attention module
-        # gamma = 2
-        # b = 1
-        # t = int(abs((math.log(exp_chs, 2) + b) / gamma))
-        # k_size = t if t % 2 else t + 1
-        # self.avg_pool = nn.AdaptiveAvgPool2d(1)
-        # self.conv = nn.Conv1d(1, 1, kernel_size=k_size, padding=(k_size - 1) // 2, bias=False)
-        # self.sigmoid = nn.Sigmoid()
-
     def forward(self, x):
-        ## From ECA-Net
-        # if self.conv_down is not None:
-        #     x = self.conv_down(x)
-        # x = self.conv_exp(x)
-
-        # # # attention layer
-        # # y = self.avg_pool(x)
-        # # y = self.conv(y.squeeze(-1).transpose(-1, -2)).transpose(-1, -2).unsqueeze(-1)
-        # # y = self.sigmoid(y)
-        
-        # xs, xb = x.chunk(2, dim=1)
-        # xb = self.blocks(xb)
-        # x = torch.cat([xs, self.conv_transition_b(xb)], dim=1)
-        # x = x * y.expand_as(x)
-        # out = self.conv_transition(x)
-
-
         if self.conv_down is not None:
             x = self.conv_down(x)
         x = self.conv_exp(x)
+        print("hi")
         xs, xb = x.chunk(2, dim=1)
+        
         xb = self.blocks(xb)
         out = self.conv_transition(torch.cat([xs, self.conv_transition_b(xb)], dim=1))
-
         return out
 
 
@@ -368,10 +339,10 @@ class AACspNet(nn.Module):
             elif isinstance(m, nn.Linear):
                 nn.init.normal_(m.weight, mean=0.0, std=0.01)
                 nn.init.zeros_(m.bias)
-        if zero_init_last_bn:
-            for m in self.modules():
-                if hasattr(m, 'zero_init_last_bn'):
-                    m.zero_init_last_bn()
+        # if zero_init_last_bn:
+        #     for m in self.modules():
+        #         if hasattr(m, 'zero_init_last_bn'):
+        #             m.zero_init_last_bn()
 
     def get_classifier(self):
         return self.head.fc

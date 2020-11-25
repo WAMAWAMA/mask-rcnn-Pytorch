@@ -9,7 +9,7 @@ import torchvision
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor
 from torchvision.models.detection.mask_rcnn import MaskRCNNPredictor
 from model.modified_mask_rcnn import get_model
-
+from torchvision import datasets, transforms
 
 class PennFudanDataset(object):
     def __init__(self, root, transforms):
@@ -83,11 +83,13 @@ class PennFudanDataset(object):
 def get_transform(train):
     transforms = []
     # converts the image, a PIL image, into a PyTorch Tensor
-    transforms.append(T.ToTensor())
+    # transforms.append(T.Resize(256))
+    transforms.append(T.Resize(128))
     if train:
         # during training, randomly flip the training images
         # and ground-truth for data augmentation
         transforms.append(T.RandomHorizontalFlip(0.5))
+    transforms.append(T.ToTensor())
     return T.Compose(transforms)
 
 
