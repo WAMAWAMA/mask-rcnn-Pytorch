@@ -22,8 +22,11 @@ def get_model(num_classes):
     # backbone = TimmToVision(m)
     m = timm.create_model('cspresnet50', features_only=True, pretrained=True)
     backbone = TimmToVisionFPN(m)
+    # m = timm.create_model('cspresnet50', pretrained=True, num_classes=0, global_pool='')
+    # backbone = TimmToVision(m,1024)
     #backbone = resnet50_fpn()
     # model = MaskRCNN(backbone, num_classes)
+    # backbone = resnet50_fpn()
 
     anchor_generator = AnchorGenerator(sizes=((32, 64, 128, 256, 512),),
                                        aspect_ratios=((0.5, 1.0, 2.0),))
@@ -33,17 +36,15 @@ def get_model(num_classes):
     num_anchors = anchor_generator.num_anchors_per_location()[0]
     rpn_head = CascadeRPNHead(out_channels, feat_channels=out_channels, num_anchors=num_anchors, stage=2)
     
-    # model = FasterRCNN(backbone,
-    #                    num_classes=num_classes,
-    #                    rpn_anchor_generator=anchor_generator,
-    #                    rpn_head=rpn_head,
-    #                    box_roi_pool=roi_pooler)
-    model = MaskRCNN(backbone,
-                     num_classes=num_classes,
-                     rpn_anchor_generator=anchor_generator,
-                     rpn_head=rpn_head)
+    model = FasterRCNN(backbone,
+                       num_classes=num_classes, rpn_head=rpn_head)
 
-    # # get the number of input features for the classifier
+    # model = MaskRCNN(backbone,
+    #                  num_classes=num_classes,
+    #                  rpn_anchor_generator=anchor_generator,
+    #                  rpn_head=rpn_head)
+
+    # get the number of input features for the classifier
     # in_features = model.roi_heads.box_predictor.cls_score.in_features
     # # replace the pre-trained head with a new one
     # model.roi_heads.box_predictor = FastRCNNPredictor(in_features, num_classes)

@@ -138,3 +138,37 @@ class CascadeRPNHead(nn.Module):
     #         logits.append(self.cls_logits(t))
     #         bbox_reg.append(self.bbox_pred(t))
     #     return logits, bbox_reg
+
+
+class RPNHead(nn.Module):
+    """
+    Adds a simple RPN Head with classification and regression heads
+
+    Arguments:
+        in_channels (int): number of channels of the input feature
+        num_anchors (int): number of anchors to be predicted
+    """
+
+    def __init__(self, in_channels, num_anchors):
+        super(RPNHead, self).__init__()
+        self.conv = nn.Conv2d(
+            in_channels, in_channels, kernel_size=3, stride=1, padding=1
+        )
+        self.cls_logits = nn.Conv2d(in_channels, num_anchors, kernel_size=1, stride=1)
+        self.bbox_pred = nn.Conv2d(
+            in_channels, num_anchors * 4, kernel_size=1, stride=1
+        )
+
+        for l in self.children():
+            torch.nn.init.normal_(l.weight, std=0.01)
+            torch.nn.init.constant_(l.bias, 0)
+
+    def forward(self, x):
+        # type: (List[Tensor])
+        logits = []
+        bbox_reg = []
+        for feature in x:
+            t = F.relu(self.conv(feature))
+            logits.append(self.cls_logits(t))
+            bbox_reg.append(self.bbox_pred(t))
+        return logits, bbox_reg
